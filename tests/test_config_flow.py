@@ -1343,6 +1343,9 @@ class TestConfigFlowIntegration:
                 "appliance": ["binary_sensor.motion1", "binary_sensor.door1"],
                 "window": ["binary_sensor.window1"],
                 "door": ["binary_sensor.door1"],
+                "temperature": ["sensor.temp1"],
+                "humidity": ["sensor.humidity1"],
+                "pressure": ["sensor.pressure1"],
             }
             schema_dict = create_schema(hass)
             assert isinstance(schema_dict, dict)
