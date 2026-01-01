@@ -206,7 +206,7 @@ def _is_weather_entity(entity_id: str, platform: str | None) -> bool:
         "weatherkit",
         "metoffice",
         "nws",
-        "ecobee",  # Ecobee thermostats include outdoor weather sensors
+        "dwd",  # Deutscher Wetterdienst (German Weather Service)
     }
 
     # Check if platform is a known weather integration

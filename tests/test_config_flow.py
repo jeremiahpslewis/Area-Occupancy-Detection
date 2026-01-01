@@ -667,11 +667,13 @@ class TestHelperFunctions:
         assert _is_weather_entity("sensor.temp", "openweathermap") is True
         assert _is_weather_entity("sensor.temp", "met") is True
         assert _is_weather_entity("sensor.temp", "accuweather") is True
+        assert _is_weather_entity("sensor.temp", "dwd") is True  # German Weather Service
         
-        # Test non-weather platforms
+        # Test non-weather platforms (including ecobee - it has legitimate room sensors)
         assert _is_weather_entity("sensor.room_temp", "zha") is False
         assert _is_weather_entity("sensor.room_temp", "mqtt") is False
         assert _is_weather_entity("sensor.room_temp", "esphome") is False
+        assert _is_weather_entity("sensor.bedroom_temp", "ecobee") is False  # Ecobee room sensors are valid
 
     def test_is_weather_entity_by_keyword(self):
         """Test that weather entities are detected by entity_id keywords."""
@@ -680,9 +682,13 @@ class TestHelperFunctions:
         assert _is_weather_entity("sensor.forecast_humidity", None) is True
         assert _is_weather_entity("sensor.outdoor_pressure", None) is True
         
+        # Test ecobee outdoor sensors are caught by keyword (even though platform is not blocked)
+        assert _is_weather_entity("sensor.ecobee_outdoor_temperature", "ecobee") is True
+        
         # Test non-weather entity_ids
         assert _is_weather_entity("sensor.living_room_temperature", None) is False
         assert _is_weather_entity("sensor.bedroom_humidity", None) is False
+        assert _is_weather_entity("sensor.ecobee_bedroom_temperature", "ecobee") is False  # Ecobee room sensor
 
     def test_get_include_entities_excludes_weather_sensors(
         self, hass, entity_registry
