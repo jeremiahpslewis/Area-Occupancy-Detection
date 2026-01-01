@@ -557,6 +557,7 @@ class TestHelperFunctions:
         assert "sensor.esphome_room_aqi" in result["air_quality"]
         assert "sensor.mqtt_room_pm25" in result["pm25"]
         assert "sensor.zha_room_pm10" in result["pm10"]
+
     @pytest.mark.parametrize(
         ("defaults", "is_options", "expected_name_present", "test_schema_validation"),
         [
