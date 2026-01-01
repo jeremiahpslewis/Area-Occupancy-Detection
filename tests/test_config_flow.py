@@ -386,8 +386,12 @@ class TestHelperFunctions:
         hass.states.async_set("binary_sensor.test_window_sensor", "off", {})
 
         # Test that keyword is found in entity_id
-        assert _entity_contains_keyword(hass, "binary_sensor.test_window_sensor", "window")
-        assert not _entity_contains_keyword(hass, "binary_sensor.test_window_sensor", "door")
+        assert _entity_contains_keyword(
+            hass, "binary_sensor.test_window_sensor", "window"
+        )
+        assert not _entity_contains_keyword(
+            hass, "binary_sensor.test_window_sensor", "door"
+        )
 
     def test_entity_contains_keyword_in_friendly_name(self, hass):
         """Test _entity_contains_keyword finds keyword in friendly name."""
@@ -507,9 +511,7 @@ class TestHelperFunctions:
         assert "door" in result
         assert "binary_sensor.test_front_entrance_contact" in result["door"]
 
-    def test_get_include_entities_window_by_friendly_name(
-        self, hass, entity_registry
-    ):
+    def test_get_include_entities_window_by_friendly_name(self, hass, entity_registry):
         """Test that window sensors are detected by friendly name.
 
         This tests that entities with 'window' in their friendly name (user-visible name)

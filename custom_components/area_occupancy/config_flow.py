@@ -152,9 +152,7 @@ def _get_state_select_options(state_type: str) -> list[dict[str, str]]:
     ]
 
 
-def _entity_contains_keyword(
-    hass: HomeAssistant, entity_id: str, keyword: str
-) -> bool:
+def _entity_contains_keyword(hass: HomeAssistant, entity_id: str, keyword: str) -> bool:
     """Check if entity ID or friendly name contains a keyword.
 
     Args:
