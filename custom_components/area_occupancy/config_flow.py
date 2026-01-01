@@ -179,12 +179,60 @@ def _entity_contains_keyword(hass: HomeAssistant, entity_id: str, keyword: str) 
     return False
 
 
+def _is_weather_entity(entity_id: str, platform: str | None) -> bool:
+    """Check if an entity is from a weather integration.
+
+    Weather entities measure outdoor conditions and are not suitable for
+    room occupancy detection.
+
+    Args:
+        entity_id: Entity ID to check
+        platform: Platform/integration that created the entity
+
+    Returns:
+        True if entity is from a weather integration
+    """
+    # List of weather integration platforms to exclude
+    weather_platforms = {
+        "weather",
+        "met",
+        "openweathermap",
+        "accuweather",
+        "weatherflow",
+        "pirateweather",
+        "darksky",
+        "buienradar",
+        "bom",
+        "weatherkit",
+        "metoffice",
+        "nws",
+        "dwd",  # Deutscher Wetterdienst (German Weather Service) - official integration
+        "dwd_weather",  # DWD Weather by FL550 - HACS custom integration
+    }
+
+    # Check if platform is a known weather integration
+    if platform and platform.lower() in weather_platforms:
+        return True
+
+    # Check if entity_id contains weather-related keywords
+    # (as a fallback for entities without platform info)
+    entity_lower = entity_id.lower()
+    weather_keywords = ["weather", "forecast", "outdoor"]
+    if any(keyword in entity_lower for keyword in weather_keywords):
+        return True
+
+    return False
+
+
 def _get_include_entities(hass: HomeAssistant) -> dict[str, list[str]]:
     """Get lists of entities to include for specific selectors."""
     registry = er.async_get(hass)
     include_appliance_entities = []
     include_window_entities = []
     include_door_entities = []
+    include_temperature_entities = []
+    include_humidity_entities = []
+    include_pressure_entities = []
 
     appliance_excluded_classes = [
         BinarySensorDeviceClass.MOTION,
@@ -214,7 +262,7 @@ def _get_include_entities(hass: HomeAssistant) -> dict[str, list[str]]:
             if device_class not in appliance_excluded_classes:
                 include_appliance_entities.append(eid)
 
-    # Check registry for specific door/window classes
+    # Check registry for specific door/window classes and environmental sensors
     for entry in registry.entities.values():
         if entry.domain == Platform.BINARY_SENSOR:
             # Check if entity contains "window" or "door" keyword in entity_id or friendly name
@@ -284,10 +332,31 @@ def _get_include_entities(hass: HomeAssistant) -> dict[str, list[str]]:
             elif is_door_candidate:
                 include_door_entities.append(entry.entity_id)
 
+        # Filter environmental sensors to exclude weather entities
+        elif entry.domain == Platform.SENSOR:
+            # Skip weather entities
+            if _is_weather_entity(entry.entity_id, entry.platform):
+                continue
+
+            # Include temperature sensors (excluding weather)
+            if entry.device_class == SensorDeviceClass.TEMPERATURE or entry.original_device_class == SensorDeviceClass.TEMPERATURE:
+                include_temperature_entities.append(entry.entity_id)
+
+            # Include humidity sensors (excluding weather)
+            if entry.device_class in [SensorDeviceClass.HUMIDITY, SensorDeviceClass.MOISTURE] or entry.original_device_class in [SensorDeviceClass.HUMIDITY, SensorDeviceClass.MOISTURE]:
+                include_humidity_entities.append(entry.entity_id)
+
+            # Include pressure sensors (excluding weather)
+            if entry.device_class in [SensorDeviceClass.PRESSURE, SensorDeviceClass.ATMOSPHERIC_PRESSURE] or entry.original_device_class in [SensorDeviceClass.PRESSURE, SensorDeviceClass.ATMOSPHERIC_PRESSURE]:
+                include_pressure_entities.append(entry.entity_id)
+
     return {
         "appliance": include_appliance_entities,
         "window": include_window_entities,
         "door": include_door_entities,
+        "temperature": include_temperature_entities,
+        "humidity": include_humidity_entities,
+        "pressure": include_pressure_entities,
     }
 
 
@@ -503,7 +572,12 @@ def _create_appliances_section_schema(
     )
 
 
-def _create_environmental_section_schema(defaults: dict[str, Any]) -> vol.Schema:
+def _create_environmental_section_schema(
+    defaults: dict[str, Any],
+    temperature_entities: list[str],
+    humidity_entities: list[str],
+    pressure_entities: list[str],
+) -> vol.Schema:
     """Create schema for the environmental section."""
     return vol.Schema(
         {
@@ -521,11 +595,7 @@ def _create_environmental_section_schema(defaults: dict[str, Any]) -> vol.Schema
                 CONF_HUMIDITY_SENSORS, default=defaults.get(CONF_HUMIDITY_SENSORS, [])
             ): EntitySelector(
                 EntitySelectorConfig(
-                    domain=Platform.SENSOR,
-                    device_class=[
-                        SensorDeviceClass.HUMIDITY,
-                        SensorDeviceClass.MOISTURE,
-                    ],
+                    include_entities=humidity_entities,
                     multiple=True,
                 )
             ),
@@ -534,8 +604,7 @@ def _create_environmental_section_schema(defaults: dict[str, Any]) -> vol.Schema
                 default=defaults.get(CONF_TEMPERATURE_SENSORS, []),
             ): EntitySelector(
                 EntitySelectorConfig(
-                    domain=Platform.SENSOR,
-                    device_class=SensorDeviceClass.TEMPERATURE,
+                    include_entities=temperature_entities,
                     multiple=True,
                 )
             ),
@@ -574,11 +643,7 @@ def _create_environmental_section_schema(defaults: dict[str, Any]) -> vol.Schema
                 default=defaults.get(CONF_PRESSURE_SENSORS, []),
             ): EntitySelector(
                 EntitySelectorConfig(
-                    domain=Platform.SENSOR,
-                    device_class=[
-                        SensorDeviceClass.PRESSURE,
-                        SensorDeviceClass.ATMOSPHERIC_PRESSURE,
-                    ],
+                    include_entities=pressure_entities,
                     multiple=True,
                 )
             ),
@@ -863,7 +928,13 @@ def create_schema(
         {"collapsed": True},
     )
     schema_dict[vol.Required("environmental")] = section(
-        _create_environmental_section_schema(defaults), {"collapsed": True}
+        _create_environmental_section_schema(
+            defaults,
+            include_entities["temperature"],
+            include_entities["humidity"],
+            include_entities["pressure"],
+        ),
+        {"collapsed": True},
     )
     schema_dict[vol.Required("power")] = section(
         _create_power_section_schema(defaults), {"collapsed": True}
