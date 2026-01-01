@@ -192,6 +192,7 @@ def _get_include_entities(hass: HomeAssistant) -> dict[str, list[str]]:
         if entry.domain == Platform.BINARY_SENSOR:
             is_window_candidate = (
                 entry.device_class == BinarySensorDeviceClass.WINDOW
+                or entry.original_device_class == BinarySensorDeviceClass.WINDOW
                 or (
                     "window" in entry.entity_id.lower()
                     and (
