@@ -24,6 +24,7 @@ from custom_components.area_occupancy.config_flow import (
     _get_purpose_display_name,
     _get_state_select_options,
     _handle_step_error,
+    _is_weather_entity,
     _remove_area_from_list,
     _update_area_in_list,
     create_schema,
@@ -658,6 +659,94 @@ class TestHelperFunctions:
         assert "binary_sensor.test_garage_contact" in result["door"]
         # Should NOT be in window list
         assert "binary_sensor.test_garage_contact" not in result.get("window", [])
+
+    def test_is_weather_entity_by_platform(self):
+        """Test that weather entities are detected by platform."""
+        # Test known weather platforms
+        assert _is_weather_entity("sensor.outdoor_temp", "weather") is True
+        assert _is_weather_entity("sensor.temp", "openweathermap") is True
+        assert _is_weather_entity("sensor.temp", "met") is True
+        assert _is_weather_entity("sensor.temp", "accuweather") is True
+        
+        # Test non-weather platforms
+        assert _is_weather_entity("sensor.room_temp", "zha") is False
+        assert _is_weather_entity("sensor.room_temp", "mqtt") is False
+        assert _is_weather_entity("sensor.room_temp", "esphome") is False
+
+    def test_is_weather_entity_by_keyword(self):
+        """Test that weather entities are detected by entity_id keywords."""
+        # Test weather-related keywords in entity_id
+        assert _is_weather_entity("sensor.weather_temperature", None) is True
+        assert _is_weather_entity("sensor.forecast_humidity", None) is True
+        assert _is_weather_entity("sensor.outdoor_pressure", None) is True
+        
+        # Test non-weather entity_ids
+        assert _is_weather_entity("sensor.living_room_temperature", None) is False
+        assert _is_weather_entity("sensor.bedroom_humidity", None) is False
+
+    def test_get_include_entities_excludes_weather_sensors(
+        self, hass, entity_registry
+    ):
+        """Test that weather sensors are excluded from environmental entities."""
+        # Register weather temperature sensor (should be excluded)
+        entity_registry.async_get_or_create(
+            "sensor",
+            "weather",  # weather platform
+            "outdoor_temp",
+            original_device_class="temperature",
+        )
+        
+        # Register room temperature sensor (should be included)
+        entity_registry.async_get_or_create(
+            "sensor",
+            "zha",  # non-weather platform
+            "living_room_temp",
+            original_device_class="temperature",
+        )
+        
+        # Register weather humidity sensor (should be excluded)
+        entity_registry.async_get_or_create(
+            "sensor",
+            "openweathermap",  # weather platform
+            "outdoor_humidity",
+            original_device_class="humidity",
+        )
+        
+        # Register room humidity sensor (should be included)
+        entity_registry.async_get_or_create(
+            "sensor",
+            "mqtt",  # non-weather platform
+            "bathroom_humidity",
+            original_device_class="humidity",
+        )
+        
+        # Register weather pressure sensor (should be excluded)
+        entity_registry.async_get_or_create(
+            "sensor",
+            "met",  # weather platform
+            "outdoor_pressure",
+            original_device_class="pressure",
+        )
+        
+        # Register room pressure sensor (should be included)
+        entity_registry.async_get_or_create(
+            "sensor",
+            "esphome",  # non-weather platform
+            "room_pressure",
+            original_device_class="pressure",
+        )
+
+        result = _get_include_entities(hass)
+
+        # Check that weather sensors are excluded
+        assert "sensor.weather_outdoor_temp" not in result.get("temperature", [])
+        assert "sensor.openweathermap_outdoor_humidity" not in result.get("humidity", [])
+        assert "sensor.met_outdoor_pressure" not in result.get("pressure", [])
+        
+        # Check that room sensors are included
+        assert "sensor.zha_living_room_temp" in result["temperature"]
+        assert "sensor.mqtt_bathroom_humidity" in result["humidity"]
+        assert "sensor.esphome_room_pressure" in result["pressure"]
 
     @pytest.mark.parametrize(
         ("defaults", "is_options", "expected_name_present", "test_schema_validation"),
