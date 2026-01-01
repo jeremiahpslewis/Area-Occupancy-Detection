@@ -667,7 +667,8 @@ class TestHelperFunctions:
         assert _is_weather_entity("sensor.temp", "openweathermap") is True
         assert _is_weather_entity("sensor.temp", "met") is True
         assert _is_weather_entity("sensor.temp", "accuweather") is True
-        assert _is_weather_entity("sensor.temp", "dwd") is True  # German Weather Service
+        assert _is_weather_entity("sensor.temp", "dwd") is True  # Official German Weather Service
+        assert _is_weather_entity("sensor.temp", "dwd_weather") is True  # HACS DWD Weather by FL550
         
         # Test non-weather platforms (including ecobee - it has legitimate room sensors)
         assert _is_weather_entity("sensor.room_temp", "zha") is False

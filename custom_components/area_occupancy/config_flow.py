@@ -206,7 +206,8 @@ def _is_weather_entity(entity_id: str, platform: str | None) -> bool:
         "weatherkit",
         "metoffice",
         "nws",
-        "dwd",  # Deutscher Wetterdienst (German Weather Service)
+        "dwd",  # Deutscher Wetterdienst (German Weather Service) - official integration
+        "dwd_weather",  # DWD Weather by FL550 - HACS custom integration
     }
 
     # Check if platform is a known weather integration
