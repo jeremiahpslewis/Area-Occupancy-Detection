@@ -669,7 +669,7 @@ class TestHelperFunctions:
         assert _is_weather_entity("sensor.temp", "accuweather") is True
         assert _is_weather_entity("sensor.temp", "dwd") is True  # Official German Weather Service
         assert _is_weather_entity("sensor.temp", "dwd_weather") is True  # HACS DWD Weather by FL550
-        
+
         # Test non-weather platforms (including ecobee - it has legitimate room sensors)
         assert _is_weather_entity("sensor.room_temp", "zha") is False
         assert _is_weather_entity("sensor.room_temp", "mqtt") is False
@@ -682,10 +682,10 @@ class TestHelperFunctions:
         assert _is_weather_entity("sensor.weather_temperature", None) is True
         assert _is_weather_entity("sensor.forecast_humidity", None) is True
         assert _is_weather_entity("sensor.outdoor_pressure", None) is True
-        
+
         # Test ecobee outdoor sensors are caught by keyword (even though platform is not blocked)
         assert _is_weather_entity("sensor.ecobee_outdoor_temperature", "ecobee") is True
-        
+
         # Test non-weather entity_ids
         assert _is_weather_entity("sensor.living_room_temperature", None) is False
         assert _is_weather_entity("sensor.bedroom_humidity", None) is False
@@ -702,7 +702,7 @@ class TestHelperFunctions:
             "outdoor_temp",
             original_device_class="temperature",
         )
-        
+
         # Register room temperature sensor (should be included)
         entity_registry.async_get_or_create(
             "sensor",
@@ -710,7 +710,7 @@ class TestHelperFunctions:
             "living_room_temp",
             original_device_class="temperature",
         )
-        
+
         # Register weather humidity sensor (should be excluded)
         entity_registry.async_get_or_create(
             "sensor",
@@ -718,7 +718,7 @@ class TestHelperFunctions:
             "outdoor_humidity",
             original_device_class="humidity",
         )
-        
+
         # Register room humidity sensor (should be included)
         entity_registry.async_get_or_create(
             "sensor",
@@ -726,7 +726,7 @@ class TestHelperFunctions:
             "bathroom_humidity",
             original_device_class="humidity",
         )
-        
+
         # Register weather pressure sensor (should be excluded)
         entity_registry.async_get_or_create(
             "sensor",
@@ -734,7 +734,7 @@ class TestHelperFunctions:
             "outdoor_pressure",
             original_device_class="pressure",
         )
-        
+
         # Register room pressure sensor (should be included)
         entity_registry.async_get_or_create(
             "sensor",
@@ -750,7 +750,7 @@ class TestHelperFunctions:
             "outdoor_aqi",
             original_device_class="aqi",
         )
-        
+
         # Register room air quality sensor (should be included)
         entity_registry.async_get_or_create(
             "sensor",
@@ -766,7 +766,7 @@ class TestHelperFunctions:
             "outdoor_pm25",
             original_device_class="pm25",
         )
-        
+
         # Register room PM2.5 sensor (should be included)
         entity_registry.async_get_or_create(
             "sensor",
@@ -782,7 +782,7 @@ class TestHelperFunctions:
             "outdoor_pm10",
             original_device_class="pm10",
         )
-        
+
         # Register room PM10 sensor (should be included)
         entity_registry.async_get_or_create(
             "sensor",
@@ -800,7 +800,7 @@ class TestHelperFunctions:
         assert "sensor.openweathermap_outdoor_aqi" not in result.get("air_quality", [])
         assert "sensor.accuweather_outdoor_pm25" not in result.get("pm25", [])
         assert "sensor.weatherflow_outdoor_pm10" not in result.get("pm10", [])
-        
+
         # Check that room sensors are included
         assert "sensor.zha_living_room_temp" in result["temperature"]
         assert "sensor.mqtt_bathroom_humidity" in result["humidity"]
