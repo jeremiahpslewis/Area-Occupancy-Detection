@@ -596,6 +596,69 @@ class TestHelperFunctions:
         # Should NOT be in door list
         assert "binary_sensor.test_contact_3" not in result.get("door", [])
 
+    def test_get_include_entities_door_with_door_keyword_in_opening(
+        self, hass, entity_registry
+    ):
+        """Test that entities with 'door' keyword and opening device class are detected as doors.
+
+        This tests the fix for the issue where door entities were only showing up in the
+        window dropdown. Entities with 'door' in their name/entity_id and device class
+        'opening' should be categorized as door sensors.
+        """
+        # Register a sensor with opening device class and 'door' in entity_id
+        entity_registry.async_get_or_create(
+            "binary_sensor",
+            "test",
+            "front_door_contact",  # Has 'door' in entity_id
+            original_device_class="opening",
+        )
+
+        # Create state
+        hass.states.async_set(
+            "binary_sensor.test_front_door_contact",
+            "off",
+            {"friendly_name": "Front Door Contact", "device_class": "opening"},
+        )
+
+        result = _get_include_entities(hass)
+
+        # The entity should appear in the door list
+        assert "door" in result
+        assert "binary_sensor.test_front_door_contact" in result["door"]
+        # Should NOT be in window list
+        assert "binary_sensor.test_front_door_contact" not in result.get("window", [])
+
+    def test_get_include_entities_door_with_garage_door_class_and_door_keyword(
+        self, hass, entity_registry
+    ):
+        """Test that garage door sensors with 'door' keyword are detected as doors.
+
+        Entities with garage_door device class and 'door' in their name should be
+        categorized as door sensors.
+        """
+        # Register a sensor with garage_door device class
+        entity_registry.async_get_or_create(
+            "binary_sensor",
+            "test",
+            "garage_contact",  # No 'door' in entity_id
+            original_device_class="garage_door",
+        )
+
+        # Create state with friendly name containing 'door'
+        hass.states.async_set(
+            "binary_sensor.test_garage_contact",
+            "off",
+            {"friendly_name": "Garage Door Sensor", "device_class": "garage_door"},
+        )
+
+        result = _get_include_entities(hass)
+
+        # The entity should appear in the door list due to garage_door device class
+        assert "door" in result
+        assert "binary_sensor.test_garage_contact" in result["door"]
+        # Should NOT be in window list
+        assert "binary_sensor.test_garage_contact" not in result.get("window", [])
+
     @pytest.mark.parametrize(
         ("defaults", "is_options", "expected_name_present", "test_schema_validation"),
         [

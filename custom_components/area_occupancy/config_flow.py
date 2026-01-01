@@ -217,16 +217,18 @@ def _get_include_entities(hass: HomeAssistant) -> dict[str, list[str]]:
     # Check registry for specific door/window classes
     for entry in registry.entities.values():
         if entry.domain == Platform.BINARY_SENSOR:
-            # Check if entity contains "window" keyword in entity_id or friendly name
+            # Check if entity contains "window" or "door" keyword in entity_id or friendly name
             has_window_keyword = _entity_contains_keyword(
                 hass, entry.entity_id, "window"
             )
+            has_door_keyword = _entity_contains_keyword(hass, entry.entity_id, "door")
 
             is_window_candidate = (
                 entry.device_class == BinarySensorDeviceClass.WINDOW
                 or entry.original_device_class == BinarySensorDeviceClass.WINDOW
                 or (
                     has_window_keyword
+                    and not has_door_keyword
                     and (
                         entry.device_class
                         in [
@@ -248,8 +250,10 @@ def _get_include_entities(hass: HomeAssistant) -> dict[str, list[str]]:
             is_door_candidate = (
                 entry.device_class == BinarySensorDeviceClass.DOOR
                 or entry.original_device_class == BinarySensorDeviceClass.DOOR
+                or entry.device_class == BinarySensorDeviceClass.GARAGE_DOOR
+                or entry.original_device_class == BinarySensorDeviceClass.GARAGE_DOOR
                 or (
-                    not has_window_keyword
+                    has_door_keyword
                     and (
                         entry.device_class
                         in [
@@ -263,6 +267,14 @@ def _get_include_entities(hass: HomeAssistant) -> dict[str, list[str]]:
                             BinarySensorDeviceClass.GARAGE_DOOR,
                             BinarySensorDeviceClass.OPENING,
                         ]
+                    )
+                )
+                or (
+                    not has_window_keyword
+                    and (
+                        entry.device_class == BinarySensorDeviceClass.OPENING
+                        or entry.original_device_class
+                        == BinarySensorDeviceClass.OPENING
                     )
                 )
             )
