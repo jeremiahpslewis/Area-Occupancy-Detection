@@ -743,17 +743,71 @@ class TestHelperFunctions:
             original_device_class="pressure",
         )
 
+        # Register weather air quality sensor (should be excluded)
+        entity_registry.async_get_or_create(
+            "sensor",
+            "openweathermap",  # weather platform
+            "outdoor_aqi",
+            original_device_class="aqi",
+        )
+        
+        # Register room air quality sensor (should be included)
+        entity_registry.async_get_or_create(
+            "sensor",
+            "esphome",  # non-weather platform
+            "room_aqi",
+            original_device_class="aqi",
+        )
+
+        # Register weather PM2.5 sensor (should be excluded)
+        entity_registry.async_get_or_create(
+            "sensor",
+            "accuweather",  # weather platform
+            "outdoor_pm25",
+            original_device_class="pm25",
+        )
+        
+        # Register room PM2.5 sensor (should be included)
+        entity_registry.async_get_or_create(
+            "sensor",
+            "mqtt",  # non-weather platform
+            "room_pm25",
+            original_device_class="pm25",
+        )
+
+        # Register weather PM10 sensor (should be excluded)
+        entity_registry.async_get_or_create(
+            "sensor",
+            "weatherflow",  # weather platform
+            "outdoor_pm10",
+            original_device_class="pm10",
+        )
+        
+        # Register room PM10 sensor (should be included)
+        entity_registry.async_get_or_create(
+            "sensor",
+            "zha",  # non-weather platform
+            "room_pm10",
+            original_device_class="pm10",
+        )
+
         result = _get_include_entities(hass)
 
         # Check that weather sensors are excluded
         assert "sensor.weather_outdoor_temp" not in result.get("temperature", [])
         assert "sensor.openweathermap_outdoor_humidity" not in result.get("humidity", [])
         assert "sensor.met_outdoor_pressure" not in result.get("pressure", [])
+        assert "sensor.openweathermap_outdoor_aqi" not in result.get("air_quality", [])
+        assert "sensor.accuweather_outdoor_pm25" not in result.get("pm25", [])
+        assert "sensor.weatherflow_outdoor_pm10" not in result.get("pm10", [])
         
         # Check that room sensors are included
         assert "sensor.zha_living_room_temp" in result["temperature"]
         assert "sensor.mqtt_bathroom_humidity" in result["humidity"]
         assert "sensor.esphome_room_pressure" in result["pressure"]
+        assert "sensor.esphome_room_aqi" in result["air_quality"]
+        assert "sensor.mqtt_room_pm25" in result["pm25"]
+        assert "sensor.zha_room_pm10" in result["pm10"]
 
     @pytest.mark.parametrize(
         ("defaults", "is_options", "expected_name_present", "test_schema_validation"),
@@ -1353,6 +1407,9 @@ class TestConfigFlowIntegration:
                 "temperature": ["sensor.temp1"],
                 "humidity": ["sensor.humidity1"],
                 "pressure": ["sensor.pressure1"],
+                "air_quality": ["sensor.aqi1"],
+                "pm25": ["sensor.pm25_1"],
+                "pm10": ["sensor.pm10_1"],
             }
             schema_dict = create_schema(hass)
             assert isinstance(schema_dict, dict)
