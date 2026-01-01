@@ -809,6 +809,60 @@ class TestHelperFunctions:
         assert "sensor.mqtt_room_pm25" in result["pm25"]
         assert "sensor.zha_room_pm10" in result["pm10"]
 
+    def test_get_include_entities_excludes_area_occupancy_sensors(
+        self, hass, entity_registry
+    ):
+        """Test that area occupancy sensors are excluded from motion sensor list.
+        
+        This prevents an ouroboros situation where area occupancy sensors
+        from this integration could be selected as motion sensors for areas,
+        creating a circular reference.
+        """
+        # Register an area occupancy sensor (should be excluded from motion)
+        entity_registry.async_get_or_create(
+            "binary_sensor",
+            DOMAIN,  # area_occupancy platform
+            "living_room_occupancy",
+            original_device_class="occupancy",
+        )
+        
+        # Register a regular motion sensor (should be included)
+        entity_registry.async_get_or_create(
+            "binary_sensor",
+            "zha",  # non-area_occupancy platform
+            "motion_sensor",
+            original_device_class="motion",
+        )
+        
+        # Register a regular occupancy sensor from another integration (should be included)
+        entity_registry.async_get_or_create(
+            "binary_sensor",
+            "mqtt",  # non-area_occupancy platform
+            "room_occupancy",
+            original_device_class="occupancy",
+        )
+        
+        # Register a presence sensor from another integration (should be included)
+        entity_registry.async_get_or_create(
+            "binary_sensor",
+            "ble_monitor",  # non-area_occupancy platform
+            "person_presence",
+            original_device_class="presence",
+        )
+
+        result = _get_include_entities(hass)
+
+        # Check that motion sensor list exists
+        assert "motion" in result
+        
+        # Check that area_occupancy sensor is excluded
+        assert f"binary_sensor.{DOMAIN}_living_room_occupancy" not in result["motion"]
+        
+        # Check that other motion/occupancy/presence sensors are included
+        assert "binary_sensor.zha_motion_sensor" in result["motion"]
+        assert "binary_sensor.mqtt_room_occupancy" in result["motion"]
+        assert "binary_sensor.ble_monitor_person_presence" in result["motion"]
+
     @pytest.mark.parametrize(
         ("defaults", "is_options", "expected_name_present", "test_schema_validation"),
         [
