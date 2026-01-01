@@ -435,6 +435,33 @@ class TestHelperFunctions:
         assert "window" in result
         assert "binary_sensor.test_living_room_contact" in result["window"]
 
+    def test_get_include_entities_door_by_original_device_class(
+        self, hass, entity_registry
+    ):
+        """Test that door sensors are detected by original_device_class.
+
+        This tests the fix for the issue where binary_sensor.door type devices
+        with only original_device_class set (not device_class) and without
+        'door' in the entity_id were not showing up in the door picker.
+        """
+        # Register a door sensor with only original_device_class set
+        # and an entity_id that doesn't contain "door"
+        entity_registry.async_get_or_create(
+            "binary_sensor",
+            "test",
+            "front_entrance_contact",  # No 'door' in name
+            original_device_class="door",  # original_device_class is 'door'
+        )
+
+        # Create state without device_class attribute (simulating real sensor)
+        hass.states.async_set("binary_sensor.test_front_entrance_contact", "off", {})
+
+        result = _get_include_entities(hass)
+
+        # The entity should appear in the door list because of original_device_class
+        assert "door" in result
+        assert "binary_sensor.test_front_entrance_contact" in result["door"]
+
     @pytest.mark.parametrize(
         ("defaults", "is_options", "expected_name_present", "test_schema_validation"),
         [
