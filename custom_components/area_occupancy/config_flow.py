@@ -192,6 +192,7 @@ def _get_include_entities(hass: HomeAssistant) -> dict[str, list[str]]:
         if entry.domain == Platform.BINARY_SENSOR:
             is_window_candidate = (
                 entry.device_class == BinarySensorDeviceClass.WINDOW
+                or entry.original_device_class == BinarySensorDeviceClass.WINDOW
                 or (
                     "window" in entry.entity_id.lower()
                     and (
@@ -212,21 +213,25 @@ def _get_include_entities(hass: HomeAssistant) -> dict[str, list[str]]:
                     )
                 )
             )
-            is_door_candidate = entry.device_class == BinarySensorDeviceClass.DOOR or (
-                "window" not in entry.entity_id.lower()
-                and (
-                    entry.device_class
-                    in [
-                        BinarySensorDeviceClass.DOOR,
-                        BinarySensorDeviceClass.GARAGE_DOOR,
-                        BinarySensorDeviceClass.OPENING,
-                    ]
-                    or entry.original_device_class
-                    in [
-                        BinarySensorDeviceClass.DOOR,
-                        BinarySensorDeviceClass.GARAGE_DOOR,
-                        BinarySensorDeviceClass.OPENING,
-                    ]
+            is_door_candidate = (
+                entry.device_class == BinarySensorDeviceClass.DOOR
+                or entry.original_device_class == BinarySensorDeviceClass.DOOR
+                or (
+                    "window" not in entry.entity_id.lower()
+                    and (
+                        entry.device_class
+                        in [
+                            BinarySensorDeviceClass.DOOR,
+                            BinarySensorDeviceClass.GARAGE_DOOR,
+                            BinarySensorDeviceClass.OPENING,
+                        ]
+                        or entry.original_device_class
+                        in [
+                            BinarySensorDeviceClass.DOOR,
+                            BinarySensorDeviceClass.GARAGE_DOOR,
+                            BinarySensorDeviceClass.OPENING,
+                        ]
+                    )
                 )
             )
 
